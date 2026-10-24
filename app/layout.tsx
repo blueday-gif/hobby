@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
-import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "시설ON | 시설관리 포털",
-  description: "시설물 상태와 점검 일정을 한눈에 확인하는 시설관리 대시보드",
+  title: "사주취미 | 사주로 찾는 나의 취미",
+  description: "생년월일시로 오행을 분석해 나에게 맞는 취미를 찾아보세요.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ko" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="ko">
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,36 +1,27 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 사주취미
 
-## Getting Started
+생년월일시를 바탕으로 사주와 오행을 분석해 나에게 맞는 취미를 추천하는 웹 앱입니다.
 
-First, run the development server:
+## 로컬 실행
 
-```bash
+```powershell
+npm ci
+Copy-Item .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.local`에 Supabase 프로젝트의 `NEXT_PUBLIC_SUPABASE_URL`과 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`를 설정합니다. 비밀 키(service_role/secret)는 사용하지 않습니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+서비스는 [http://localhost:3000/saju](http://localhost:3000/saju)에서 확인할 수 있습니다. 루트 주소 `/`도 사주취미 화면으로 이동합니다.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 인증 설정
 
-## Learn More
+Google·카카오 OAuth는 [설정 안내](./docs/saju-oauth-setup.md)를 참고합니다. Supabase 개발 환경변수 설정은 [개발 설정 문서](./docs/supabase-dev-setup.md)를 참고합니다.
 
-To learn more about Next.js, take a look at the following resources:
+## 검증
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```powershell
+npm test
+npm run lint
+npx tsc --noEmit
+```

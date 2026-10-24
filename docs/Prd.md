@@ -54,20 +54,20 @@ authors: [PM / 기획 / 프론트엔드·백엔드 설계]
 | :--- | :--- | :--- |
 | **가벼운 체험형 방문자 (비회원)** | "내 사주 오행으로 보는 내 캐릭터와 취미가 뭘까?" 호기심으로 접속하지만, 처음부터 회원가입을 요구하면 이탈함 | 랜딩 페이지 → 가입 없이 생년월일시 입력 → 일간 캐릭터 + 오행 웰니스 요약 + 1순위 분류 및 대표 취미 1개 즉시 확인 |
 | **결과 수집·공유형 사용자 (전환 회원)** | 1위 취미 외에 나머지 11개 취미의 적합도 순위가 궁금하고, 친구에게 내 캐릭터와 결과를 공유하거나 저장해 두고 싶음 | 비회원 결과 화면에서 `전체 12개 순위 보기 / 저장하기` 클릭 → 3초 소셜 로그인 → 자동 저장된 상세 결과 확인 및 링크 공유 |
-| **재방문 회원 (기존 회원)** | 이전에 확인했던 내 취미 순위와 웰니스 팁을 다시 보거나 가족/지인 사주를 추가로 넣어보고 싶음 | 로그인 → 마이페이지(`/mypage`)에서 저장된 프로필 및 과거 결과 리스트 즉시 열람 |
+| **재방문 회원 (기존 회원)** | 이전에 확인했던 내 취미 순위와 웰니스 팁을 다시 보거나 가족/지인 사주를 추가로 넣어보고 싶음 | 로그인 → 마이페이지(`/saju/mypage`)에서 저장된 프로필 및 과거 결과 리스트 즉시 열람 |
 
 ### 2.2 종단간(End-to-End) 사용자 흐름도
-1. **랜딩 (`/`)**: 서비스 소개, 10천간 캐릭터 & 3분류·12취미 미리보기 카드 확인 후 `[내 사주 취미 찾기]` CTA 클릭
-2. **정보 입력 (`/input`)**:
+1. **랜딩 (`/saju`)**: 서비스 소개, 10천간 캐릭터 & 3분류·12취미 미리보기 카드 확인 후 `[내 사주 취미 찾기]` CTA 클릭
+2. **정보 입력 (`/saju/input`)**:
    - 회원인 경우 저장된 `profiles` 정보 자동 프리필(Pre-fill) 제공
    - 생년월일(YYYY-MM-DD), 달력 유형(양력/음력 평달/음력 윤달), 출생시간(12시진 선택 또는 정확한 시·분, `출생시간 모름` 체크박스), 성별(남/여) 입력
 3. **사주·오행 계산 및 36종 템플릿 매핑 (클라이언트/서버 순수 함수)**:
    - 만세력 엔진이 사주 팔자 추출 → 오행(목·화·토·금·수) 백분율 정규화 → `judge(saju)`가 ① 일간 캐릭터(10종 중 1), ② 오행 건강/웰니스 팁(11종 중 1~2), ③ 3분류 총평(3종 중 1), ④ 12개 소분류 취미 순위 및 동적 수치 치환 문구 생성
-4. **결과 확인 (`/result` 또는 `/result/[id]`)**:
-   - **비회원 (`/result`)**: 일간 캐릭터 카드 + 오행 분포 & 신체 웰니스 요약 + 1순위 대분류 배지 + 1위 소분류 취미 상세 카드 노출. 2~12위 전체 순위표는 블러(Blur) 처리 및 `[로그인하고 12개 전체 순위 열람·저장하기]` 버튼 노출
-   - **회원 (`/result/[id]`)**: 결과가 Supabase `results` 테이블에 즉시 저장되며, 1~12위 전체 취미 점수와 오행 매칭 해설, `[공유 링크 복사]` 기능 활성화
-5. **비회원 → 회원 이월 (`/login` → `/auth/callback` → `/result/[id]`)**:
-   - 비회원이 결과 화면에서 로그인 클릭 시 현재 판정 데이터를 `localStorage`(`saju_pending_result`)에 임시 보관 → 소셜 로그인 및 개인정보 동의 완료 시 DB에 자동 insert 후 `/result/[id]`로 이동
+4. **결과 확인 (`/saju/result` 또는 `/saju/result/[id]`)**:
+   - **비회원 (`/saju/result`)**: 일간 캐릭터 카드 + 오행 분포 & 신체 웰니스 요약 + 1순위 대분류 배지 + 1위 소분류 취미 상세 카드 노출. 2~12위 전체 순위표는 블러(Blur) 처리 및 `[로그인하고 12개 전체 순위 열람·저장하기]` 버튼 노출
+   - **회원 (`/saju/result/[id]`)**: 결과가 Supabase `results` 테이블에 즉시 저장되며, 1~12위 전체 취미 점수와 오행 매칭 해설, `[공유 링크 복사]` 기능 활성화
+5. **비회원 → 회원 이월 (`/saju/login` → `/saju/auth/callback` → `/saju/result/[id]`)**:
+   - 비회원이 결과 화면에서 로그인 클릭 시 현재 판정 데이터를 `localStorage`(`saju_pending_result`)에 임시 보관 → 소셜 로그인 및 개인정보 동의 완료 시 DB에 자동 insert 후 `/saju/result/[id]`로 이동
 
 ## 3. 분류 체계 및 36종 마스터 콘텐츠 템플릿 전체 명세
 
@@ -274,13 +274,13 @@ export interface JudgeResult {
 | **3대 대분류 점수 및 1순위 총평** | ✅ | ✅ | 운동형·지능형·예술형 점수 비율 및 1위 분류 총평 표시 |
 | **대표 추천 취미 1개 상세 카드** | ✅ | ✅ | 1위 취미명, 동적 수치(`%`) 매칭 이유, 입문 가이드 표시 |
 | **12개 소분류 전체 점수 및 순위표 (2~12위)** | ❌ (블러 잠금) | ✅ (전체 해금) | 비회원 화면에서는 2~4위 카드가 블러 처리되며 로그인 CTA 오버레이 노출 |
-| **판정 결과 영구 저장 및 재조회** | ❌ (새로고침 시 소실) | ✅ (`/mypage` 이력 보관) | 비회원 상단에 "현재 결과는 저장되지 않았습니다" 배너 노출 |
-| **결과 공유 링크 (`/share/[id]`) 생성** | ❌ | ✅ | 공유 버튼 클릭 시 비회원은 로그인 모달 호출, 회원은 클립보드 링크 복사 |
+| **판정 결과 영구 저장 및 재조회** | ❌ (새로고침 시 소실) | ✅ (`/saju/mypage` 이력 보관) | 비회원 상단에 "현재 결과는 저장되지 않았습니다" 배너 노출 |
+| **결과 공유 링크 (`/saju/share/[id]`) 생성** | ❌ | ✅ | 공유 버튼 클릭 시 비회원은 로그인 모달 호출, 회원은 클립보드 링크 복사 |
 
 ### 5.2 비회원 판정 결과 자동 이월(Pending Result Handover) 메커니즘
-1. **임시 보관 (`localStorage`)**: 비회원이 `/input` 제출 시 입력값과 `JudgeResult` 전체를 `localStorage.setItem('saju_pending_result', ...)`에 저장 (만료 24시간).
-2. **소셜 로그인 트리거**: `/result`에서 `[로그인하고 12개 전체 순위 확인·저장하기]` 클릭 시 `redirectTo: '${origin}/auth/callback?next=/result/migrate'`로 OAuth 호출.
-3. **자동 DB 적재 (`/result/migrate`)**: 로그인 완료 후 `saju_pending_result`를 읽어 `profiles` upsert 및 `results` insert 수행 후 `localStorage` 클린업 및 `/result/[id]`로 리다이렉트.
+1. **임시 보관 (`localStorage`)**: 비회원이 `/saju/input` 제출 시 입력값과 `JudgeResult` 전체를 `localStorage.setItem('saju_pending_result', ...)`에 저장 (만료 24시간).
+2. **소셜 로그인 트리거**: `/saju/result`에서 `[로그인하고 12개 전체 순위 확인·저장하기]` 클릭 시 `redirectTo: '${origin}/saju/auth/callback?next=/saju/result/migrate'`로 OAuth 호출.
+3. **자동 DB 적재 (`/saju/result/migrate`)**: 로그인 완료 후 `saju_pending_result`를 읽어 `profiles` upsert 및 `results` insert 수행 후 `localStorage` 클린업 및 `/saju/result/[id]`로 리다이렉트.
 
 ## 6. 페이지 구조(IA) 및 화면별 상세 기능 명세
 
@@ -288,14 +288,14 @@ export interface JudgeResult {
 | 경로 (Route) | 렌더링 방식 | 접근 권한 | 핵심 역할 |
 | :--- | :--- | :--- | :--- |
 | `/` | SSR / Static | 전체 공개 | 서비스 소개, 10천간 캐릭터·3분류·12취미 프리뷰, `[내 사주 취미 찾기]` CTA |
-| `/input` | CSR | 전체 공개 | 생년월일시·달력유형·성별 입력 폼, 실시간 유효성 검증, 회원 프로필 자동 채우기 |
-| `/result` | CSR | 전체 공개 | 비회원 임시 판정 결과 뷰 (`localStorage` 기반), 1위 취미·웰니스 공개 및 2~12위 블러 |
-| `/result/migrate` | CSR | 회원 전용 | OAuth 로그인 직후 비회원 임시 결과를 Supabase DB에 자동 저장 후 리다이렉트 |
-| `/result/[id]` | SSR + CSR | 본인 회원 전용 | DB에 저장된 회원 판정 결과 상세 뷰 (1~12위 전체 순위 해금, 공유 링크 복사) |
-| `/share/[id]` | SSR (Dynamic OG) | 전체 공개 (`is_public=true`) | 타인에게 공유된 결과 전용 뷰 (생년월일시 비노출, 일간 캐릭터·웰니스·취미 요약) |
-| `/login` | CSR | 비회원 전용 | 카카오·구글 소셜 로그인 버튼 및 개인정보 수집·이용 동의 체크박스 제공 |
-| `/auth/callback` | Route Handler | 시스템 | Supabase OAuth 인증 코드 교환(`exchangeCodeForSession`) 라우트 |
-| `/mypage` | SSR + CSR | 회원 전용 | 내 기본 생년월일시 프로필 수정, 과거 판정 결과 히스토리 목록 조회·삭제 |
+| `/saju/input` | CSR | 전체 공개 | 생년월일시·달력유형·성별 입력 폼, 실시간 유효성 검증, 회원 프로필 자동 채우기 |
+| `/saju/result` | CSR | 전체 공개 | 비회원 임시 판정 결과 뷰 (`localStorage` 기반), 1위 취미·웰니스 공개 및 2~12위 블러 |
+| `/saju/result/migrate` | CSR | 회원 전용 | OAuth 로그인 직후 비회원 임시 결과를 Supabase DB에 자동 저장 후 리다이렉트 |
+| `/saju/result/[id]` | SSR + CSR | 본인 회원 전용 | DB에 저장된 회원 판정 결과 상세 뷰 (1~12위 전체 순위 해금, 공유 링크 복사) |
+| `/saju/share/[id]` | SSR (Dynamic OG) | 전체 공개 (`is_public=true`) | 타인에게 공유된 결과 전용 뷰 (생년월일시 비노출, 일간 캐릭터·웰니스·취미 요약) |
+| `/saju/login` | CSR | 비회원 전용 | 이메일·Google·카카오 로그인 및 개인정보 수집·이용 동의 체크박스 제공 |
+| `/saju/auth/callback` | Route Handler | 시스템 | Supabase OAuth 인증 코드 교환(`exchangeCodeForSession`) 라우트 |
+| `/saju/mypage` | SSR + CSR | 회원 전용 | 내 기본 생년월일시 프로필 수정, 과거 판정 결과 히스토리 목록 조회·삭제 |
 
 ## 7. 데이터베이스 스키마(DDL) 및 36종 템플릿 실제 데이터(Seed SQL)
 
@@ -646,11 +646,11 @@ export function resolveWellnessTemplateIds(
    - `src/constants/templates.ts`에 36종 마스터 템플릿(10천간·11웰니스·3대분류·12취미) 및 `interpolateHobbyReason` 구현
    - `src/lib/saju/calculator.ts` 및 `src/lib/saju/judge.ts` 구현 후 Vitest 8대 단위 테스트 통과
 2. **Milestone 2 — 입력·결과 UI 및 비회원 플로우 구현 (Day 2)**
-   - 랜딩(`/`), 생년월일시 입력 폼(`/input`), 비회원 결과 화면(`/result`: 일간 캐릭터 카드 + 오행 웰니스 박스 + 대표 취미 1개 + 2~12위 블러 잠금) 구현
+   - 랜딩(`/saju`), 생년월일시 입력 폼(`/saju/input`), 비회원 결과 화면(`/saju/result`: 일간 캐릭터 카드 + 오행 웰니스 박스 + 대표 취미 1개 + 2~12위 블러 잠금) 구현
    - `localStorage` 기반 `saju_pending_result` 임시 상태 관리 연동
 3. **Milestone 3 — Supabase DB 스키마·36종 Seed 적재 및 자동 이월 연동 (Day 3)**
    - 7장의 DDL 및 36종 Seed SQL 실행 (`saju_day_masters`, `saju_wellness_templates`, `saju_category_templates`, `saju_hobby_templates`, `profiles`, `results`, `shared_results_view`)
-   - 카카오·구글 소셜 로그인 연동 및 `/result/migrate` 자동 DB 저장 파이프라인 완성
+   - 카카오·구글 소셜 로그인 연동 및 `/saju/result/migrate` 자동 DB 저장 파이프라인 완성
 4. **Milestone 4 — 마이페이지·공유 페이지 및 Vercel 배포 (Day 4)**
-   - `/mypage` 이력 조회·삭제, `/share/[id]` 동적 OG 메타데이터(일간 캐릭터 별칭 + 추천 취미 노출) 구현
+   - `/saju/mypage` 이력 조회·삭제, `/saju/share/[id]` 동적 OG 메타데이터(일간 캐릭터 별칭 + 추천 취미 노출) 구현
    - 모바일/데스크톱 반응형 QA 및 Vercel 프로덕션 배포 검증

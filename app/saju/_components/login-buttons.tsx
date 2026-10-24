@@ -10,14 +10,14 @@ type Provider = "kakao" | "google";
 type EmailMode = "signin" | "signup";
 
 const PROVIDER_LABEL: Record<Provider, string> = {
-  kakao: "카카오로 시작하기",
-  google: "Google로 시작하기",
+  google: "Google로 계속",
+  kakao: "카카오로 계속",
 };
 
 const PRIVACY_REQUIRED = "개인정보 수집·이용에 동의해 주세요.";
 
 export default function LoginButtons({ next, initialError }: { next: string; initialError?: string | null }) {
-  const [mode, setMode] = useState<EmailMode>("signup");
+  const [mode, setMode] = useState<EmailMode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -29,18 +29,17 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
 
   const disabled = busy !== null || isPending;
 
-  function changeMode(value: EmailMode) {
-    setMode(value);
-    setError(null);
-    setNotice(null);
-  }
-
   function handleEmailSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const requestedMode: EmailMode =
+      submitter instanceof HTMLButtonElement ? (submitter.value === "signup" ? "signup" : "signin") : mode;
+
+    setMode(requestedMode);
     setError(null);
     setNotice(null);
 
-    if (mode === "signup" && !consent) {
+    if (requestedMode === "signup" && !consent) {
       setError(PRIVACY_REQUIRED);
       return;
     }
@@ -54,12 +53,12 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
     }
 
     // 로그인 직후 /result/migrate에서 개인정보 동의 여부를 서버 액션으로 넘길 수 있도록 기억해 둔다.
-    if (consent) rememberPrivacyAgreed();
+    if (requestedMode === "signup" && consent) rememberPrivacyAgreed();
 
     startTransition(async () => {
       // 성공하면 서버 액션이 redirect()로 다음 화면으로 보내므로 여기로 돌아오지 않는다.
       const outcome =
-        mode === "signup"
+        requestedMode === "signup"
           ? await signUpWithEmail(email, password, next, consent)
           : await signInWithEmail(email, password, next);
 
@@ -96,28 +95,8 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
   }
 
   return (
-    <div className="sj-stack">
-      <div className="sj-seg" role="radiogroup" aria-label="이메일 로그인 방식">
-        {(
-          [
-            ["signup", "이메일로 가입"],
-            ["signin", "이메일로 로그인"],
-          ] as const
-        ).map(([value, label]) => (
-          <label key={value}>
-            <input
-              type="radio"
-              name="emailMode"
-              value={value}
-              checked={mode === value}
-              onChange={() => changeMode(value)}
-            />
-            <span>{label}</span>
-          </label>
-        ))}
-      </div>
-
-      <form className="sj-form" style={{ gap: 14 }} onSubmit={handleEmailSubmit} noValidate>
+    <div className="sj-login-methods">
+      <form className="sj-form sj-login-form" onSubmit={handleEmailSubmit} noValidate>
         <div className="sj-field">
           <label className="sj-label" htmlFor="sj-email">
             이메일
@@ -128,9 +107,10 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
             type="email"
             inputMode="email"
             autoComplete="email"
-            placeholder="example@email.com"
+            placeholder="name@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            disabled={disabled}
           />
         </div>
 
@@ -146,6 +126,7 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
             placeholder={`${MIN_PASSWORD_LENGTH}자리 이상`}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            disabled={disabled}
           />
           <label className="sj-check">
             <input type="checkbox" checked={showPassword} onChange={(e) => setShowPassword(e.target.checked)} />
@@ -156,12 +137,15 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
           )}
         </div>
 
-        <label className="sj-check">
-          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+        <label className="sj-check sj-login-consent">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(e) => setConsent(e.target.checked)}
+            disabled={disabled}
+          />
           <span>
-            (필수) 결과를 저장·재조회하기 위해 생년월일시와 성별을 수집·이용하는 것에 동의합니다. 마이페이지에서 언제든
-            수정·삭제할 수 있어요.
-            {mode === "signin" && " (이미 가입한 계정으로 이메일 로그인할 때는 체크하지 않아도 돼요.)"}
+            (필수) 가입 또는 간편 로그인, 결과 저장을 위해 생년월일시와 성별을 수집·이용하는 데 동의합니다. 이메일 로그인에는 체크하지 않아도 돼요.
           </span>
         </label>
 
@@ -176,25 +160,33 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
           </p>
         )}
 
-        <button type="submit" className="sj-btn" disabled={disabled}>
-          {isPending ? "처리 중..." : mode === "signup" ? "가입하기" : "로그인"}
-        </button>
+        <div className="sj-login-email-actions">
+          <button type="submit" name="intent" value="signin" className="sj-btn sj-btn-ghost" disabled={disabled}>
+            {isPending ? "처리 중..." : "로그인"}
+          </button>
+          <button type="submit" name="intent" value="signup" className="sj-btn" disabled={disabled}>
+            {isPending ? "처리 중..." : "가입하기"}
+          </button>
+        </div>
       </form>
 
-      <p className="sj-hint sj-center" style={{ padding: 0 }}>
-        또는
-      </p>
+      <div className="sj-login-divider" aria-hidden="true">
+        <span>또는 간편 로그인</span>
+      </div>
 
-      <div className="sj-stack" style={{ gap: 10 }}>
-        {(["kakao", "google"] as const).map((provider) => (
+      <div className="sj-login-social">
+        {(["google", "kakao"] as const).map((provider) => (
           <button
             key={provider}
             type="button"
-            className={`sj-btn sj-btn-${provider}`}
+            className={`sj-login-social-btn sj-login-social-${provider}`}
             disabled={disabled}
             onClick={() => handleSocialSignIn(provider)}
           >
-            {busy === provider ? "이동 중..." : PROVIDER_LABEL[provider]}
+            <span className="sj-login-social-mark" aria-hidden="true">
+              {provider === "google" ? "G" : "K"}
+            </span>
+            {busy === provider ? "로그인 페이지로 이동 중..." : PROVIDER_LABEL[provider]}
           </button>
         ))}
       </div>

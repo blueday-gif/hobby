@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AnimatePresence, MotionConfig, motion, useInView } from "motion/react";
+import { AnimatePresence, MotionConfig, animate, motion, useInView } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { ElementType } from "@/lib/saju/types";
 
@@ -10,15 +10,40 @@ export interface LandingCharacter {
   element: ElementType;
 }
 
+export interface LandingHobby {
+  name: string;
+  slug: string;
+  category: string;
+  shortCopy: string;
+  starterGuide: string;
+}
+
 export interface LandingCategory {
   name: string;
-  hobbies: string[];
+  hobbies: LandingHobby[];
 }
 
 interface LandingProps {
   characters: LandingCharacter[];
   categories: LandingCategory[];
 }
+
+const HOBBY_EMOJI: Record<string, string> = {
+  running: "🏃",
+  climbing: "🧗",
+  swimming: "🏊",
+  "yoga-pilates": "🧘",
+  "reading-writing": "📚",
+  "boardgame-chess": "♟️",
+  "coding-maker": "💻",
+  "foreign-language": "🌏",
+  drawing: "🎨",
+  instrument: "🎸",
+  "photo-video": "📷",
+  "pottery-craft": "🏺",
+};
+
+const CATEGORY_EMOJI: Record<string, string> = { 운동형: "💪", 지능형: "🧠", 예술형: "✨" };
 
 const ELEMENTS: { key: ElementType; label: string; demo: number }[] = [
   { key: "wood", label: "목", demo: 32 },
@@ -28,10 +53,11 @@ const ELEMENTS: { key: ElementType; label: string; demo: number }[] = [
   { key: "water", label: "수", demo: 12 },
 ];
 
-const STEPS = [
-  { no: "01", title: "생년월일시 입력", note: "시간 몰라도 OK" },
-  { no: "02", title: "오행 분석", note: "만세력 기반" },
-  { no: "03", title: "취미 추천", note: "12개 중 순위" },
+/** 결과 예시 카드에 보여줄 가상의 순위 */
+const SAMPLE_RANKS = [
+  { slug: "climbing", score: 92.4 },
+  { slug: "yoga-pilates", score: 88.1 },
+  { slug: "running", score: 85.7 },
 ];
 
 const ease = [0.22, 1, 0.36, 1] as const;
@@ -49,49 +75,115 @@ function Reveal({ children, className }: { children: React.ReactNode; className?
       variants={reveal}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, amount: 0.3 }}
+      viewport={{ once: true, amount: 0.25 }}
     >
       {children}
     </motion.section>
   );
 }
 
-/** 오행 다섯 원이 천천히 도는 히어로 그림 */
-function ElementOrbit() {
+function CtaButton({ children }: { children: React.ReactNode }) {
   return (
-    <div className="sj-orbit" aria-hidden="true">
-      <motion.div
-        className="sj-orbit-ring"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
-      >
-        {ELEMENTS.map((el, i) => {
-          const angle = (i / ELEMENTS.length) * Math.PI * 2 - Math.PI / 2;
-          return (
-            <motion.span
-              key={el.key}
-              className={`sj-orbit-dot el-${el.key}`}
-              style={{ left: `${50 + Math.cos(angle) * 44}%`, top: `${50 + Math.sin(angle) * 44}%` }}
-              initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1, rotate: -360 }}
-              transition={{
-                scale: { delay: 0.4 + i * 0.12, type: "spring", stiffness: 260, damping: 18 },
-                opacity: { delay: 0.4 + i * 0.12 },
-                rotate: { duration: 40, repeat: Infinity, ease: "linear" },
-              }}
+    <motion.span whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ display: "inline-block" }}>
+      <Link href="/saju/input" className="sj-btn sj-btn-lg">
+        {children}
+      </Link>
+    </motion.span>
+  );
+}
+
+/** 히어로: 취미 카드가 한 장씩 넘어가는 카드 더미 */
+function HobbyDeck({ hobbies }: { hobbies: LandingHobby[] }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setIndex((i) => (i + 1) % hobbies.length), 2600);
+    return () => window.clearInterval(timer);
+  }, [hobbies.length]);
+
+  const visible = [0, 1, 2].map((depth) => hobbies[(index + depth) % hobbies.length]);
+
+  return (
+    <div className="sj-deck" aria-hidden="true">
+      <AnimatePresence initial={false}>
+        {visible
+          .map((hobby, depth) => (
+            <motion.div
+              key={hobby.slug}
+              className="sj-deck-card"
+              initial={{ opacity: 0, y: 60, scale: 0.85 }}
+              animate={{ opacity: 1 - depth * 0.25, y: depth * 22, scale: 1 - depth * 0.06, rotate: depth * 2 }}
+              exit={{ opacity: 0, x: -120, rotate: -12, transition: { duration: 0.45, ease } }}
+              transition={{ duration: 0.55, ease }}
+              style={{ zIndex: 3 - depth }}
             >
-              {el.label}
-            </motion.span>
+              <span className="sj-deck-emoji">{HOBBY_EMOJI[hobby.slug] ?? "⭐"}</span>
+              <small>{hobby.category}</small>
+              <b>{hobby.name}</b>
+              <p>{hobby.shortCopy}</p>
+            </motion.div>
+          ))
+          .reverse()}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+/** 0에서 목표 점수까지 올라가는 숫자 */
+function CountUp({ to, start }: { to: number; start: boolean }) {
+  const [value, setValue] = useState(0);
+  useEffect(() => {
+    if (!start) return;
+    const controls = animate(0, to, { duration: 1.2, ease, onUpdate: (v) => setValue(v) });
+    return () => controls.stop();
+  }, [start, to]);
+  return <>{value.toFixed(1)}</>;
+}
+
+/** 실제 결과 화면을 줄여 보여주는 예시 카드 */
+function ResultPreview({ bySlug }: { bySlug: Record<string, LandingHobby> }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true, amount: 0.4 });
+  const top = bySlug[SAMPLE_RANKS[0].slug];
+
+  return (
+    <div ref={ref} className="sj-preview">
+      <div className="sj-preview-top">
+        <span className="sj-preview-badge">나의 1위 취미</span>
+        <div className="sj-preview-head">
+          <span className="sj-preview-emoji">{HOBBY_EMOJI[top.slug]}</span>
+          <div>
+            <b>{top.name}</b>
+            <small>{top.category}</small>
+          </div>
+          <strong>
+            <CountUp to={SAMPLE_RANKS[0].score} start={inView} />
+            <span>점</span>
+          </strong>
+        </div>
+        <p className="sj-preview-guide">{top.starterGuide}</p>
+      </div>
+      <div className="sj-preview-ranks">
+        {SAMPLE_RANKS.slice(1).map((rank, i) => {
+          const hobby = bySlug[rank.slug];
+          return (
+            <motion.div
+              key={rank.slug}
+              className="sj-preview-rank"
+              initial={{ opacity: 0, x: 24 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ delay: 0.5 + i * 0.15, duration: 0.5, ease }}
+            >
+              <span className="sj-preview-no">{i + 2}</span>
+              <span>
+                {HOBBY_EMOJI[rank.slug]} {hobby.name}
+              </span>
+              <b>{rank.score.toFixed(1)}</b>
+            </motion.div>
           );
         })}
-      </motion.div>
-      <motion.div
-        className="sj-orbit-core"
-        animate={{ scale: [1, 1.06, 1] }}
-        transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        五行
-      </motion.div>
+        <div className="sj-preview-more">+ 9개 취미 순위</div>
+      </div>
     </div>
   );
 }
@@ -112,10 +204,10 @@ function RotatingCharacter({ characters }: { characters: LandingCharacter[] }) {
         <motion.span
           key={current.nickname}
           className={`sj-rotator-word el-${current.element}`}
-          initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+          initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -24, filter: "blur(6px)" }}
-          transition={{ duration: 0.45, ease }}
+          exit={{ opacity: 0, y: -16, filter: "blur(6px)" }}
+          transition={{ duration: 0.4, ease }}
         >
           {current.nickname}
         </motion.span>
@@ -149,29 +241,9 @@ function DemoBars() {
   );
 }
 
-/** 취미 이름이 옆으로 흘러가는 띠 */
-function HobbyMarquee({ hobbies, reverse }: { hobbies: string[]; reverse?: boolean }) {
-  const items = [...hobbies, ...hobbies];
-  return (
-    <div className="sj-marquee" aria-hidden="true">
-      <motion.div
-        className="sj-marquee-track"
-        animate={{ x: reverse ? ["-50%", "0%"] : ["0%", "-50%"] }}
-        transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
-      >
-        {items.map((name, i) => (
-          <span key={`${name}-${i}`} className="sj-marquee-item">
-            {name}
-          </span>
-        ))}
-      </motion.div>
-    </div>
-  );
-}
-
 export default function Landing({ characters, categories }: LandingProps) {
   const allHobbies = categories.flatMap((c) => c.hobbies);
-  const half = Math.ceil(allHobbies.length / 2);
+  const bySlug = Object.fromEntries(allHobbies.map((h) => [h.slug, h]));
 
   return (
     <MotionConfig reducedMotion="user">
@@ -184,80 +256,79 @@ export default function Landing({ characters, categories }: LandingProps) {
             variants={{ show: { transition: { staggerChildren: 0.12 } } }}
           >
             <motion.span className="sj-eyebrow" variants={reveal}>
-              사주로 찾는 나의 취미
+              요즘 뭐 하고 놀지?
             </motion.span>
             <motion.h1 variants={reveal}>
-              내 사주에 맞는 취미,
+              나한테 딱 맞는 취미,
               <br />
-              <em>1분</em>이면 충분해요
+              <em>1분</em>이면 찾아요
             </motion.h1>
             <motion.p className="sj-lead" variants={reveal}>
-              가입 없이 바로 확인해 보세요.
+              12개 취미 중 나에게 맞는 순서대로 알려드려요.
             </motion.p>
-            <motion.div variants={reveal}>
-              <motion.span whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ display: "inline-block" }}>
-                <Link href="/saju/input" className="sj-btn sj-btn-lg">
-                  내 취미 찾기
-                </Link>
-              </motion.span>
+            <motion.div variants={reveal} className="sj-land-hero-actions">
+              <CtaButton>내 취미 찾기</CtaButton>
+              <span className="sj-land-badge">사주 오행 분석 기반 · 가입 없이 무료</span>
             </motion.div>
           </motion.div>
-          <ElementOrbit />
+          <HobbyDeck hobbies={allHobbies} />
         </section>
 
-        <Reveal className="sj-land-steps">
-          {STEPS.map((step, i) => (
-            <motion.div
-              key={step.no}
-              className="sj-land-step"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.12, duration: 0.6, ease }}
-              whileHover={{ y: -4 }}
-            >
-              <small>{step.no}</small>
-              <b>{step.title}</b>
-              <span>{step.note}</span>
-            </motion.div>
-          ))}
-        </Reveal>
-
         <Reveal className="sj-land-block">
-          <h2>
-            나는 어떤 사람일까?
-            <br />
-            <RotatingCharacter characters={characters} />
-          </h2>
+          <h2>어떤 취미가 있나요?</h2>
+          <div className="sj-land-cats">
+            {categories.map((c, i) => (
+              <motion.div
+                key={c.name}
+                className="sj-land-cat"
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.12, duration: 0.6, ease }}
+                whileHover={{ y: -6 }}
+              >
+                <div className="sj-land-cat-head">
+                  <span>{CATEGORY_EMOJI[c.name] ?? "⭐"}</span>
+                  <b>{c.name}</b>
+                </div>
+                <ul>
+                  {c.hobbies.map((h) => (
+                    <li key={h.slug}>
+                      <span aria-hidden="true">{HOBBY_EMOJI[h.slug]}</span> {h.name}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            ))}
+          </div>
         </Reveal>
 
         <Reveal className="sj-land-block sj-land-split">
-          <h2>
-            다섯 가지 기운,
-            <br />
-            한눈에
-          </h2>
+          <div className="sj-stack" style={{ gap: 12 }}>
+            <h2>
+              이런 결과를
+              <br />
+              받아볼 수 있어요
+            </h2>
+            <p className="sj-lead">1위 취미와 시작 방법, 전체 순위까지.</p>
+          </div>
+          <ResultPreview bySlug={bySlug} />
+        </Reveal>
+
+        <Reveal className="sj-land-block sj-land-split sj-land-how">
+          <div className="sj-stack" style={{ gap: 12 }}>
+            <span className="sj-eyebrow">어떻게 골라 주나요?</span>
+            <h2>사주 속 다섯 기운으로 골라요</h2>
+            <p className="sj-lead">
+              나의 캐릭터는 <RotatingCharacter characters={characters} />
+            </p>
+          </div>
           <DemoBars />
         </Reveal>
 
-        <Reveal className="sj-land-block sj-land-hobbies">
-          <h2>12개 취미 중 나의 1위는?</h2>
-          <div className="sj-land-categories">
-            {categories.map((c) => (
-              <span key={c.name}>{c.name}</span>
-            ))}
-          </div>
-          <HobbyMarquee hobbies={allHobbies.slice(0, half)} />
-          <HobbyMarquee hobbies={allHobbies.slice(half)} reverse />
-        </Reveal>
-
         <Reveal className="sj-land-cta">
-          <h2>지금 바로 시작해 보세요</h2>
-          <motion.span whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ display: "inline-block" }}>
-            <Link href="/saju/input" className="sj-btn sj-btn-lg">
-              무료로 시작하기
-            </Link>
-          </motion.span>
+          <h2>나의 1위 취미는 뭘까요?</h2>
+          <CtaButton>무료로 시작하기</CtaButton>
         </Reveal>
 
         <p className="sj-disclaimer sj-center-text">

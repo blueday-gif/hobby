@@ -75,85 +75,7 @@ export default function ResultView({ data, mode, lockedCta }: ResultViewProps) {
 
   return (
     <div className="sj-stack">
-      {/* 1. 일간 캐릭터 */}
-      <section className="sj-card sj-character">
-        <span className="sj-eyebrow">나의 일간 캐릭터</span>
-        <div className={`el-${dayMaster.element}`}>
-          <span className="sj-chip">
-            <i className="sj-dot" style={{ background: "var(--el)" }} />
-            {dayMaster.nameKo}
-          </span>
-        </div>
-        <h2>{dayMaster.nickname}</h2>
-        <p>{dayMaster.summary}</p>
-        {data.saju && (
-          <div className="sj-pillars" aria-label="사주 팔자">
-            <PillarCell label="시주" pillar={data.saju.hour} />
-            <PillarCell label="일주" pillar={data.saju.day} isDay />
-            <PillarCell label="월주" pillar={data.saju.month} />
-            <PillarCell label="년주" pillar={data.saju.year} />
-          </div>
-        )}
-      </section>
-
-      {/* 2. 오행 분포 + 웰니스 */}
-      <section className="sj-card">
-        <div className="sj-section-title">
-          <h2>오행 분포와 신체 밸런스</h2>
-          <span>
-            가장 강한 기운 {ELEMENT_SHORT_KO[data.strongestElement]} · 보완할 기운 {ELEMENT_SHORT_KO[data.weakestElement]}
-          </span>
-        </div>
-        <div className="sj-bars" role="list" aria-label="오행 비율">
-          {ELEMENT_ORDER.map((element) => (
-            <div key={element} className={`sj-bar el-${element}`} role="listitem">
-              <span className="sj-bar-name">
-                <i className="sj-dot" />
-                {ELEMENT_KO_LABEL[element]}
-              </span>
-              <div className="sj-bar-track">
-                <div className="sj-bar-fill" style={{ width: `${Math.min(100, elements[element])}%` }} />
-              </div>
-              <b>{elements[element].toFixed(1)}%</b>
-            </div>
-          ))}
-        </div>
-        <div style={{ marginTop: 18 }}>
-          <WellnessCard guide={data.wellness.primary} />
-          {data.wellness.secondary && <WellnessCard guide={data.wellness.secondary} />}
-        </div>
-        <p className="sj-disclaimer" style={{ marginTop: 12 }}>
-          전통 오행론에 기댄 생활 웰니스 가이드이며 의학적 진단이 아니에요. 몸에 불편이 있다면 전문가와 상담해 주세요.
-        </p>
-      </section>
-
-      {/* 3. 대분류 */}
-      <section className="sj-card">
-        <div className="sj-section-title">
-          <h2>{topCategory.headline}</h2>
-          <span>대표 분류 · {topCategory.nameKo}</span>
-        </div>
-        <p>{topCategory.description}</p>
-        <div className="sj-bars" style={{ marginTop: 18 }} role="list" aria-label="대분류 점수">
-          {CATEGORY_ORDER.map((category) => (
-            <div key={category} className="sj-bar" role="listitem">
-              <span className="sj-bar-name">{CATEGORY_TEMPLATES[category].nameKo}</span>
-              <div className="sj-bar-track">
-                <div
-                  className="sj-bar-fill"
-                  style={{
-                    width: `${Math.min(100, data.categoryScores[category])}%`,
-                    background: category === topCategory.category ? "var(--sj-accent)" : "#d9c7ad",
-                  }}
-                />
-              </div>
-              <b>{data.categoryScores[category].toFixed(1)}%</b>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. 대표 취미 */}
+      {/* 1. 대표 취미 */}
       <section className="sj-card sj-top-hobby sj-stack" style={{ gap: 14 }}>
         <div className="sj-chips">
           <span className="sj-chip sj-chip-soft">나의 1순위 취미</span>
@@ -173,7 +95,7 @@ export default function ResultView({ data, mode, lockedCta }: ResultViewProps) {
         </p>
       </section>
 
-      {/* 5. 전체 순위 */}
+      {/* 2. 전체 순위 */}
       <section className="sj-card">
         <div className="sj-section-title">
           <h2>12개 취미 전체 순위</h2>
@@ -221,6 +143,90 @@ export default function ResultView({ data, mode, lockedCta }: ResultViewProps) {
             ))}
           </div>
         )}
+      </section>
+
+      {/* 3. 대분류 */}
+      <section className="sj-card">
+        <div className="sj-section-title">
+          <h2>{topCategory.headline}</h2>
+          <span>대표 분류 · {topCategory.nameKo}</span>
+        </div>
+        <p>{topCategory.description}</p>
+        <div className="sj-bars" style={{ marginTop: 18 }} role="list" aria-label="대분류 점수">
+          {CATEGORY_ORDER.map((category) => (
+            <div key={category} className="sj-bar" role="listitem">
+              <span className="sj-bar-name">{CATEGORY_TEMPLATES[category].nameKo}</span>
+              <div className="sj-bar-track">
+                <div
+                  className="sj-bar-fill"
+                  style={{
+                    width: `${Math.min(100, data.categoryScores[category])}%`,
+                    background: category === topCategory.category ? "var(--sj-accent)" : "#d1d6db",
+                  }}
+                />
+              </div>
+              <b>{data.categoryScores[category].toFixed(1)}%</b>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4~5. 추천 근거: 사주로 본 나 */}
+      <div className="sj-why">
+        <span className="sj-eyebrow">왜 이 취미일까요?</span>
+        <h2>사주로 본 나</h2>
+      </div>
+
+      {/* 4. 일간 캐릭터 */}
+      <section className="sj-card sj-character">
+        <span className="sj-eyebrow">나의 일간 캐릭터</span>
+        <div className={`el-${dayMaster.element}`}>
+          <span className="sj-chip">
+            <i className="sj-dot" style={{ background: "var(--el)" }} />
+            {dayMaster.nameKo}
+          </span>
+        </div>
+        <h2>{dayMaster.nickname}</h2>
+        <p>{dayMaster.summary}</p>
+        {data.saju && (
+          <div className="sj-pillars" aria-label="사주 팔자">
+            <PillarCell label="시주" pillar={data.saju.hour} />
+            <PillarCell label="일주" pillar={data.saju.day} isDay />
+            <PillarCell label="월주" pillar={data.saju.month} />
+            <PillarCell label="년주" pillar={data.saju.year} />
+          </div>
+        )}
+      </section>
+
+      {/* 5. 오행 분포 + 웰니스 */}
+      <section className="sj-card">
+        <div className="sj-section-title">
+          <h2>오행 분포와 신체 밸런스</h2>
+          <span>
+            가장 강한 기운 {ELEMENT_SHORT_KO[data.strongestElement]} · 보완할 기운 {ELEMENT_SHORT_KO[data.weakestElement]}
+          </span>
+        </div>
+        <div className="sj-bars" role="list" aria-label="오행 비율">
+          {ELEMENT_ORDER.map((element) => (
+            <div key={element} className={`sj-bar el-${element}`} role="listitem">
+              <span className="sj-bar-name">
+                <i className="sj-dot" />
+                {ELEMENT_KO_LABEL[element]}
+              </span>
+              <div className="sj-bar-track">
+                <div className="sj-bar-fill" style={{ width: `${Math.min(100, elements[element])}%` }} />
+              </div>
+              <b>{elements[element].toFixed(1)}%</b>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 18 }}>
+          <WellnessCard guide={data.wellness.primary} />
+          {data.wellness.secondary && <WellnessCard guide={data.wellness.secondary} />}
+        </div>
+        <p className="sj-disclaimer" style={{ marginTop: 12 }}>
+          전통 오행론에 기댄 생활 웰니스 가이드이며 의학적 진단이 아니에요. 몸에 불편이 있다면 전문가와 상담해 주세요.
+        </p>
       </section>
     </div>
   );

@@ -84,7 +84,11 @@ export default function LoginButtons({ next, initialError }: { next: string; ini
       const redirectTo = `${window.location.origin}/saju/auth/callback?next=${encodeURIComponent(next)}`;
       const { error: signInError } = await createClient().auth.signInWithOAuth({
         provider,
-        options: { redirectTo },
+        options: {
+          redirectTo,
+          // 카카오는 닉네임만 요청한다 (이메일 권한 없음, 프로필 사진 미사용)
+          scopes: provider === "kakao" ? "profile_nickname" : undefined,
+        },
       });
       if (signInError) throw signInError;
       // 성공하면 브라우저가 소셜 로그인 페이지로 이동하므로 busy 상태를 유지한다.
